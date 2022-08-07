@@ -37,7 +37,7 @@ app.get(`/api/persons/:id`, (req, res) => {
     })
     .catch(error => {
       console.log(error)
-      res.status(500).end()
+      res.status(400).send({error: "malformatted id"})
     })
 }) 
 
@@ -66,6 +66,10 @@ app.post('/api/persons', (req, res) => {
 
 app.delete('/api/persons/:id', (req, res) => {
 
+  Person.deleteOne({_id: req.params.id})
+    .then(person => {
+      res.json("person removed")
+    })
 
 //   const id = Number(req.params.id)
 //   persons = persons.filter(p => p.id !== id)
