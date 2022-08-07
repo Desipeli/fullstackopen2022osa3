@@ -35,6 +35,10 @@ app.get(`/api/persons/:id`, (req, res) => {
         res.status(404).end()
       }
     })
+    .catch(error => {
+      console.log(error)
+      res.status(500).end()
+    })
 }) 
 
 app.get('/info', (req, res) => {
@@ -62,7 +66,7 @@ app.post('/api/persons', (req, res) => {
 
 app.delete('/api/persons/:id', (req, res) => {
 
-  
+
 //   const id = Number(req.params.id)
 //   persons = persons.filter(p => p.id !== id)
 //   res.status(204).end()
