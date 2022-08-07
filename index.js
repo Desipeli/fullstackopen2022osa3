@@ -12,6 +12,17 @@ app.use(express.json())
 morgan.token('body', (req, res) => JSON.stringify(req.body));
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
+const errorHandler = (error, req, res, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return res.status(400).send({ error: 'malformatted id' })
+  }
+  next(error)
+}
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: 'unknown endpoint' })
+}
 
 // let persons = [
 //     { id: 1, name: 'Arto Hellas', number: '040-123456' },
@@ -26,7 +37,7 @@ app.get('/api/persons', (req, res) => {
   })
 })
 
-app.get(`/api/persons/:id`, (req, res) => {
+app.get(`/api/persons/:id`, (req, res, next) => {
   Person.findById(req.params.id)
     .then(person => {
       if (person) {
@@ -35,10 +46,7 @@ app.get(`/api/persons/:id`, (req, res) => {
         res.status(404).end()
       }
     })
-    .catch(error => {
-      console.log(error)
-      res.status(400).send({error: "malformatted id"})
-    })
+    .catch(error => next(error))
 }) 
 
 app.get('/info', (req, res) => {
@@ -64,46 +72,36 @@ app.post('/api/persons', (req, res) => {
   })
 })
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
 
-  Person.deleteOne({_id: req.params.id})
+  Person.findByIdAndRemove({_id: req.params.id})
     .then(person => {
-      res.json("person removed")
+      res.status(204).end()
     })
-
-//   const id = Number(req.params.id)
-//   persons = persons.filter(p => p.id !== id)
-//   res.status(204).end()
-// })
-
-// app.post('/api/persons', (req, res) => {
-//   const body = req.body
-
-//   if (!body.name) {
-//     return res.status(400).json({
-//       error: 'name missing'
-//     })
-//   }
-//   if (persons.find(p => p.name === body.name)) {
-//     return res.status(400).json({
-//       error: 'person already in database'
-//     })
-//   }
-//   if (!body.number) {
-//     return res.status(400).json({
-//       error: 'number missing'
-//     })
-//   }
-
-//   const newPerson = {
-//     id: Math.floor(Math.random()*1000000),
-//     name: body.name,
-//     number: body.number
-//   }
-
-//   persons = persons.concat(newPerson)
-//   res.json(newPerson)
+    .catch(error => next(error))
 })
+
+app.put('/api/persons/:id', (req, res, next) => {
+  const body = req.body
+
+  console.log("muutosolio:")
+  console.log(`${body.name} ${body.number} ${req.params.id}`)
+
+  const person = {
+    name: body.name,
+    number: body.number,
+  }
+
+  Person.findByIdAndUpdate(req.params.id, person, {new: true})
+    .then(updatedPerson => {
+      res.json(updatedPerson)
+    })
+    .catch(error => next(error))
+})
+
+//Oltava viimeisinä
+app.use(unknownEndpoint)
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
